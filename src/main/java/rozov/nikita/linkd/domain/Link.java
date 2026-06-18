@@ -1,19 +1,28 @@
 package rozov.nikita.linkd.domain;
 
-import jakarta.persistence.Entity;
-import lombok.Builder;
-import lombok.Data;
+import jakarta.persistence.*;
+import lombok.*;
 
-import java.sql.Timestamp;
+import java.time.Instant;
 
-@Data
-@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
+@Entity
+@Table(name = "links")
 public class Link {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "short_code", nullable = false, unique = true, length = 16)
     private String shortCode;
-    private String customAlias;
+
+    @Column(name = "long_url", nullable = false)
     private String longUrl;
-    private Long ttl;
-    private Timestamp createdAt;
+
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 }

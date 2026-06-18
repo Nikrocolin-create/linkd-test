@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.sql.Timestamp;
+import java.time.Instant;
 
 
 @AllArgsConstructor
@@ -15,6 +15,6 @@ import java.sql.Timestamp;
 public class LinkResp {
     private String shortCode;
     private String shortUrl;
-    private Timestamp expiresAt;
+    private Instant expiresAt;
 }
 
