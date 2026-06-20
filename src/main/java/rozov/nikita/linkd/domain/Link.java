@@ -25,4 +25,7 @@ public class Link {
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
+    @Column(name = "ttl")
+    private Long ttl;
 }
