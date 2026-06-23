@@ -1,32 +1,35 @@
 package rozov.nikita.linkd.utility;
 
-public class CodeGenerator {
-    private static final String CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    private static final int LENGTH = 8;
-    private static final int BASE = 62;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Component;
 
-    public static String encode(long n) {
+@Component
+@AllArgsConstructor
+public class CodeGenerator {
+    private PropertyUtil props;
+
+    public String encode(long n) {
         n = scramble(n);
-        char[] result = new char[LENGTH];
-        for (int i = LENGTH - 1; i >= 0; i--) {
-            result[i] = CHARS.charAt((int)(n % BASE));
-            n /= BASE;
+        char[] result = new char[props.getLength()];
+        for (int i = props.getLength() - 1; i >= 0; i--) {
+            result[i] = props.getChars().charAt((int) Long.remainderUnsigned(n, props.getBase()));
+            n = Long.divideUnsigned(n, props.getBase());
         }
         return new String(result);
     }
 
-    public static long decode(String s) {
+    public long decode(String s) {
         long result = 0;
         for (char c : s.toCharArray()) {
-            result = result * BASE + CHARS.indexOf(c);
+            result = result * props.getBase() + props.getChars().indexOf(c);
         }
         return unscramble(result);
     }
-    public static long scramble(long id) {
-        return id * 6364136223846793005L;
+    public long scramble(long id) {
+        return id * props.getScrambleNumberPos();
     }
 
-    public static long unscramble(long scrambled) {
-        return scrambled * -4576744217476464767L;
+    public long unscramble(long scrambled) {
+        return scrambled * props.getScrambleNumberNeg();
     }
 }

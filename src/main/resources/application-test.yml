@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: linkd
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/linkd
+    username: linkd
+    password: linkd
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+config:
+  base-url: "http://localhost:8080/"
+  chars: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+  base: 62
+  length: 8
+  scramble-number-pos: 6364136223846793005
+  scramble-number-neg: -4576744217476464767

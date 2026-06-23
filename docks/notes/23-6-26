@@ -1,0 +1,9 @@
+@URL
+@ControllerAdvice
+MethodArgumentNotValidException
+ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
+
+@ConfigurationProperties(prefix = "mail")
+private String hostName;
+
+ResponseEntity.status(HttpStatus.FOUND).location(URI.create(longUrl)).build();

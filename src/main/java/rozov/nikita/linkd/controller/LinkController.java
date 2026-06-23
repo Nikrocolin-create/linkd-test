@@ -1,5 +1,6 @@
 package rozov.nikita.linkd.controller;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,7 @@ public class LinkController {
 
     @PostMapping("/links")
     @ResponseStatus(HttpStatus.CREATED)
-    public LinkResp createLink(@RequestBody CreateLinkReq req) {
+    public LinkResp createLink(@RequestBody @Valid CreateLinkReq req) {
         return service.create(req);
     }
 
