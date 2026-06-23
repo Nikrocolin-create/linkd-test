@@ -17,7 +17,7 @@ public class Link {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "short_code", nullable = false, unique = true, length = 16)
+    @Column(name = "short_code", nullable = false, length = 8)
     private String shortCode;
 
     @Column(name = "long_url", nullable = false)
