@@ -21,14 +21,16 @@ public class LinkService {
     private final CodeGenerator codeGenerator;
     @Transactional
     public LinkResp create(CreateLinkReq req) {
-        String shortCode = "********";
+        Long id = repository.nextId();
+        String shortCode = codeGenerator.encode(id);
         Link link = Link.builder()
+                .id(id)
+                .isNew(true)
                 .shortCode(shortCode)
                 .longUrl(req.getUrl())
+                .ttl(req.getTtl())
                 .createdAt(Instant.now())
                 .build();
-        link = repository.save(link);
-        link.setShortCode(codeGenerator.encode(link.getId()));
         link = repository.save(link);
         Instant expiresAt = req.getTtl() != null
                 ? Instant.now().plusSeconds(req.getTtl())
@@ -47,6 +49,8 @@ public class LinkService {
         return props.getBaseUrl() + shortCode;
     }
     // Knuth's multiplicative constant 64-bit: 6364136223846793005
+    // todo дупликат кода, можно ли узнать id до сохранения в бд
+
 
 
 }

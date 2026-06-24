@@ -2,6 +2,7 @@ package rozov.nikita.linkd.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.domain.Persistable;
 
 import java.time.Instant;
 
@@ -12,9 +13,14 @@ import java.time.Instant;
 @Builder
 @Entity
 @Table(name = "links")
-public class Link {
+public class Link  implements Persistable<Long> {
+    @Transient
+    private boolean isNew = false;
+    @Override public boolean isNew() { return isNew; }
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "links_seq")
+//    @SequenceGenerator(name = "links_seq", sequenceName = "links_id_seq", allocationSize = 1)
     private Long id;
 
     @Column(name = "short_code", nullable = false, length = 8)
