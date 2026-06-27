@@ -26,12 +26,12 @@ public class Link  implements Persistable<Long> {
     @Column(name = "short_code", nullable = false, length = 8)
     private String shortCode;
 
-    @Column(name = "long_url", nullable = false)
+    @Column(name = "long_url", nullable = false, unique = true)
     private String longUrl;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Column(name = "ttl")
-    private Long ttl;
+    @Column(name = "expires_at", nullable = false)
+    private Instant expiresAt;
 }

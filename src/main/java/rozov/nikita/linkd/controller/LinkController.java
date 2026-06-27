@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import rozov.nikita.linkd.dto.CreateLinkReq;
 import rozov.nikita.linkd.dto.LinkResp;
 import rozov.nikita.linkd.service.LinkService;
@@ -18,9 +19,9 @@ public class LinkController {
     private final LinkService service;
 
     @PostMapping("/links")
-    @ResponseStatus(HttpStatus.CREATED)
-    public LinkResp createLink(@RequestBody @Valid CreateLinkReq req) {
-        return service.create(req);
+    public ResponseEntity<LinkResp> createLink(@RequestBody @Valid CreateLinkReq req) {
+        LinkResp response = service.create(req);
+        return ResponseEntity.created(URI.create(response.getShortUrl())).body(response);
     }
 
     @GetMapping("/{code}")

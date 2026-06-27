@@ -1,0 +1,34 @@
+ALTER TABLE users ADD CONSTRAINT uq_users_email UNIQUE (email);
+
+?? batch to delete expired routes
+
+@Transactional на методе значит, что Hibernate накапливает изменения в памяти (first-level cache) и делает flush — реальный SQL-запрос — только в конце транзакции, при commit. К
+этому моменту твой try-catch уже закончился, и исключение летит выше.
+
+Порядок событий:
+repository.save(link)  →  Hibernate: "запомню, отправлю потом"
+try-catch              →  Exception: нет, всё тихо
+метод возвращает результат
+@Transactional commit  →  INSERT попадает в БД  →  unique violation
+                                                 ^^^^ уже вне try-catch
+
+repository.flush();
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Autowired
+private TestRestTemplate rest;
+
+Location header Pattern
+    URI location = ServletUriComponentsBuilder
+            .fromCurrentRequest()
+            .path("/{id}")
+            .buildAndExpand(id)
+            .toUri();
+    return ResponseEntity.created(location).build();
+String body = mockMvc.perform(post("/api/v1/links")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new CreateLinkReq("https://www.google.com/", null))))
+        .andExpect(status().isCreated())
+        .andReturn().getResponse().getContentAsString();
+
+?? CDC mongo postgres
