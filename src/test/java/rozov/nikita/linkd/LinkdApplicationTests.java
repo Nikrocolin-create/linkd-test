@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
+import rozov.nikita.linkd.configuration.PostgresConfig;
 import rozov.nikita.linkd.domain.Link;
 import rozov.nikita.linkd.dto.CreateLinkReq;
 import rozov.nikita.linkd.dto.LinkResp;
@@ -25,10 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@Import(TestcontainersConfiguration.class)
+@Import(PostgresConfig.class)
 @SpringBootTest
 @AutoConfigureMockMvc
-//@AllArgsConstructor
 class LinkdApplicationTests {
     @Autowired
     private LinkRepository repository;
