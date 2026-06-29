@@ -22,3 +22,5 @@ config:
   scramble-number-pos: 6364136223846793005
   scramble-number-neg: -4576744217476464767
   default-expires-at: "2099-12-31T23:59:59Z"
+  cache:
+    ttl: 3600

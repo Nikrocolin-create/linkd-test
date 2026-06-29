@@ -3,6 +3,8 @@ package rozov.nikita.linkd.service;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import rozov.nikita.linkd.domain.Link;
 import rozov.nikita.linkd.dto.CreateLinkReq;
@@ -13,6 +15,7 @@ import rozov.nikita.linkd.utility.PropertyUtil;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @AllArgsConstructor
@@ -20,6 +23,7 @@ public class LinkService {
     private final LinkRepository repository;
     private final PropertyUtil props;
     private final CodeGenerator codeGenerator;
+    private final RedisTemplate<String, String> redisTemplate;
     @Transactional
     public LinkResp create(CreateLinkReq req) {
         Long id = repository.nextId();
@@ -45,17 +49,21 @@ public class LinkService {
     }
 
     public String getLongUrl(String shortCode) {
-        return repository.findByShortCode(shortCode)
-                .map(Link::getLongUrl)
-                .orElseThrow(() -> new EntityNotFoundException("Code not found: " + shortCode));
-    }
+        ValueOperations<String, String> valueOps = redisTemplate.opsForValue();
+        String url = valueOps.get(shortCode);
+        if (url != null) {
+            return url;
+        } else {
+            Link value = repository.findByShortCodeAndExpiresAtAfter(shortCode, Instant.now()).orElseThrow(() -> new EntityNotFoundException("Code not found: " + shortCode));
+            long remainingTtl = value.getExpiresAt().getEpochSecond() - Instant.now().getEpochSecond();
+            long ttl = Math.min(props.getCache().get("ttl"), remainingTtl);
+            valueOps.set(shortCode, value.getLongUrl(), ttl, TimeUnit.SECONDS);
+            return value.getLongUrl();
+        }
 
+    }
 
     private String generateShortUrl(String shortCode) {
         return props.getBaseUrl() + shortCode;
     }
-    // Knuth's multiplicative constant 64-bit: 6364136223846793005
-
-
-
 }

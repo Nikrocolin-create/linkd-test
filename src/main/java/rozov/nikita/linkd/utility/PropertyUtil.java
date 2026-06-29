@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Configuration
 @ConfigurationProperties(prefix = "config")
@@ -19,4 +20,5 @@ public class PropertyUtil {
     private long scrambleNumberPos;
     private long scrambleNumberNeg;
     private Instant defaultExpiresAt;
+    private Map<String, Long> cache;
 }

@@ -1,17 +1,13 @@
 package rozov.nikita.linkd;
 
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
-import rozov.nikita.linkd.configuration.PostgresConfig;
+import org.testcontainers.utility.TestcontainersConfiguration;
 import rozov.nikita.linkd.domain.Link;
 import rozov.nikita.linkd.dto.CreateLinkReq;
 import rozov.nikita.linkd.dto.LinkResp;
@@ -23,10 +19,11 @@ import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@Import(PostgresConfig.class)
+@Import(TestcontainersConfiguration.class)
 @SpringBootTest
 @AutoConfigureMockMvc
 class LinkdApplicationTests {
@@ -55,7 +52,7 @@ class LinkdApplicationTests {
                 .createdAt(Instant.now())
                 .build();
         repository.save(link);
-        Link inserted = repository.findByShortCode(shortCode).orElse(null);
+        Link inserted = repository.findByShortCodeAndExpiresAtAfter(shortCode, Instant.now()).orElse(null);
         assertNotNull(inserted);
         assertNotNull(inserted.getId());
         assertEquals(inserted.getShortCode(), link.getShortCode());
@@ -79,4 +76,6 @@ class LinkdApplicationTests {
         mockMvc.perform(get(resp.getShortUrl()))
                 .andExpect(status().is3xxRedirection());
     }
+
+
 }

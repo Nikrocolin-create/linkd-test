@@ -23,3 +23,5 @@ config:
   scramble-number-neg: -4576744217476464767
   default-expires-at: "2099-12-31T23:59:59Z"
   long-url-index: long_url_unique
+  cache:
+    ttl: 3600

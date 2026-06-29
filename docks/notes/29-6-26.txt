@@ -1,0 +1,7 @@
+@MockitoSpyBean
+private LinkRepository linkRepository;
+
+ValueOperations<String, String> spyOps = Mockito.spy(redisTemplate.opsForValue());
+1) заставляем template отдавать именно его (doReturn — для spy!)
+doReturn(spyOps).when(redisTemplate).opsForValue();
+verify(spyOps, times(2)).get(any());

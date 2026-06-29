@@ -1,6 +1,7 @@
 package rozov.nikita.linkd;
 
 import org.springframework.boot.SpringApplication;
+import rozov.nikita.linkd.configuration.TestcontainersConfiguration;
 
 public class TestLinkdApplication {
 
