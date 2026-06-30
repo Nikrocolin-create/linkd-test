@@ -3,6 +3,7 @@ package rozov.nikita.linkd.service;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
@@ -18,14 +19,15 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class LinkService {
     private final LinkRepository repository;
     private final PropertyUtil props;
     private final CodeGenerator codeGenerator;
     private final RedisTemplate<String, String> redisTemplate;
+
     @Transactional
-    public LinkResp create(CreateLinkReq req) {
+    public LinkResp create(CreateLinkReq req, boolean cacheEnabled) {
         Long id = repository.nextId();
         String shortCode = codeGenerator.encode(id);
         Instant expiresAt = req.getTtl() != null
@@ -45,6 +47,10 @@ public class LinkService {
             return new LinkResp(found.getShortCode(), generateShortUrl(found.getShortCode()), expiresAt);
         }
         link = repository.save(link);
+        if (cacheEnabled) {
+            ValueOperations<String, String> ops = redisTemplate.opsForValue();
+            ops.set(shortCode, req.getUrl(), expiresAt.getEpochSecond() - Instant.now().getEpochSecond(), TimeUnit.SECONDS);
+        }
         return new LinkResp(link.getShortCode(), generateShortUrl(link.getShortCode()), expiresAt);
     }
 
@@ -63,6 +69,13 @@ public class LinkService {
 
     }
 
+    public void deleteLink(String shortCode) {
+        repository.findByShortCodeAndExpiresAtAfter(shortCode, Instant.now())
+                .ifPresent(link -> {
+                    redisTemplate.delete(shortCode);
+                    repository.delete(link);
+                });
+    }
     private String generateShortUrl(String shortCode) {
         return props.getBaseUrl() + shortCode;
     }

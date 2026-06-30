@@ -1,0 +1,3 @@
+redisTemplate.getConnectionFactory().getConnection().flushAll();
+AtomicReference<String> shortCodeRef = new AtomicReference<>();
+shortCodeRef.compareAndSet(null, shortCode);

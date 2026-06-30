@@ -5,3 +5,29 @@ ValueOperations<String, String> spyOps = Mockito.spy(redisTemplate.opsForValue()
 1) заставляем template отдавать именно его (doReturn — для spy!)
 doReturn(spyOps).when(redisTemplate).opsForValue();
 verify(spyOps, times(2)).get(any());
+
+@PreUpdate
+@RequiredArgsConstructor
+@PrePersist
+
+k6, jmeter нагрузочное тестирование
+генерация данных
+
+redisTemplate.opsForValue().setIfAbsent(key, value, ttl, TimeUnit.SECONDS);
+
+@SneakyThrows
+
+CacheManager
+@Cacheable(value = "links", key = "#shortCode", unless = "#result == null") //provider caffeine, redis более умная чем CachePut
+@CacheEvict(value = "links", key = "#shortCode")
+@CachePut(value = "links", key = "#shortCode", unless = "#result == null")
+All annotations are working as proxies
+Spring Expression Language (SpEL)
+
+@Transactional + @Cacheable/@CacheEvict/@CachePut
+
+rdb snapshot (раз в N секунд или операций) +
+aof append only file
+
+ассинхронная запись в aof (append only file) + периодическая запись в rdb snapshot
+ассинхронная репликация в slave (replica) по умолчанию read-only  
