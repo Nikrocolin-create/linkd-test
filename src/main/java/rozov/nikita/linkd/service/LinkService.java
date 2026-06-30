@@ -2,8 +2,8 @@ package rozov.nikita.linkd.service;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LinkService {
     private final LinkRepository repository;
     private final PropertyUtil props;
@@ -51,6 +52,7 @@ public class LinkService {
             ValueOperations<String, String> ops = redisTemplate.opsForValue();
             ops.set(shortCode, req.getUrl(), expiresAt.getEpochSecond() - Instant.now().getEpochSecond(), TimeUnit.SECONDS);
         }
+        log.info("Created new link: {} -> {}", shortCode, req.getUrl());
         return new LinkResp(link.getShortCode(), generateShortUrl(link.getShortCode()), expiresAt);
     }
 
@@ -58,12 +60,14 @@ public class LinkService {
         ValueOperations<String, String> valueOps = redisTemplate.opsForValue();
         String url = valueOps.get(shortCode);
         if (url != null) {
+            log.info("Cache hit for link: {} -> {}", shortCode, url);
             return url;
         } else {
             Link value = repository.findByShortCodeAndExpiresAtAfter(shortCode, Instant.now()).orElseThrow(() -> new EntityNotFoundException("Code not found: " + shortCode));
             long remainingTtl = value.getExpiresAt().getEpochSecond() - Instant.now().getEpochSecond();
             long ttl = Math.min(props.getCache().get("ttl"), remainingTtl);
             valueOps.set(shortCode, value.getLongUrl(), ttl, TimeUnit.SECONDS);
+            log.info("Cache miss for link: {} -> {}", shortCode, value.getLongUrl());
             return value.getLongUrl();
         }
 
@@ -74,6 +78,7 @@ public class LinkService {
                 .ifPresent(link -> {
                     redisTemplate.delete(shortCode);
                     repository.delete(link);
+                    log.info("Deleted link with short code: {}", shortCode);
                 });
     }
     private String generateShortUrl(String shortCode) {
