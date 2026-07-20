@@ -1,0 +1,9 @@
+private ConcurrentHashMap<String, CompletableFuture<String>> inflight = new ConcurrentHashMap<>();
+inflight.putIfAbsent(shortCode, CompletableFuture.supplyAsync(() -> {
+    Link value = repository.findByShortCodeAndExpiresAtAfter(shortCode, Instant.now()).orElseThrow(() -> new EntityNotFoundException("Code not found: " + shortCode));
+    return value.getLongUrl();
+}));
+Persistable<Long> isNew()
+@Transient - не пишем в бд
+
+Boolean.TRUE.equals(  valueOps.setIfAbsent(lockKey, lockToken, LOCK_TTL_SECONDS, TimeUnit.SECONDS));
