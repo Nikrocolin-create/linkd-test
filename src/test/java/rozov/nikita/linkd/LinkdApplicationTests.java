@@ -14,8 +14,12 @@ import rozov.nikita.linkd.dto.LinkResp;
 import rozov.nikita.linkd.repository.LinkRepository;
 import rozov.nikita.linkd.utility.PropertyUtil;
 import tools.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.concurrent.*;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -35,9 +39,10 @@ class LinkdApplicationTests {
     private MockMvc mockMvc;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private MeterRegistry meterRegistry;
 	@Test
-	void contextLoads() {
-	}
+	void contextLoads() {}
 
     @Test
     public void insertionDBTest() {
@@ -58,13 +63,13 @@ class LinkdApplicationTests {
         assertEquals(inserted.getShortCode(), link.getShortCode());
     }
     @Test
-    public void restTemplate404 () throws Exception {
+    public void restTemplate404Test () throws Exception {
         mockMvc.perform(get("/api/v1/AAAAAAAA"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    public void restTemplateSuccess () throws Exception {
+    public void restTemplateSuccessTest () throws Exception {
         String body = mockMvc.perform(post("/api/v1/links")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new CreateLinkReq("https://www.google.com/", null))))
@@ -77,5 +82,31 @@ class LinkdApplicationTests {
                 .andExpect(status().is3xxRedirection());
     }
 
+    @Test
+    public void simultaneousRequestsCacheHitMissTets () throws Exception {
+        String body = mockMvc.perform(post("/api/v1/links")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new CreateLinkReq("https://www.yandex.com/", null))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
 
+        LinkResp resp = objectMapper.readValue(body, LinkResp.class);
+
+        ExecutorService pool = Executors.newFixedThreadPool(50);
+        CountDownLatch startGate = new CountDownLatch(1);
+        List<Callable<Void>> tasks = IntStream.range(0, 50)
+                .mapToObj(i -> (Callable<Void>) () -> {
+                    startGate.await();
+                    mockMvc.perform(get(resp.getShortUrl()))
+                            .andExpect(status().is3xxRedirection());
+                    return null;
+                })
+                .toList();
+        List<Future<Void>> futures = tasks.stream().map(pool::submit).toList();
+        startGate.countDown();
+        for (Future<Void> f: futures) f.get();
+        pool.shutdown(); //blocks pool to accept new tasks
+        assertEquals(49, meterRegistry.counter("cache.hits", "cacheName","links").count());
+        assertEquals(1, meterRegistry.counter("cache.misses", "cacheName","links").count());
+    }
 }

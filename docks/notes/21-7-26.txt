@@ -17,3 +17,7 @@ volatile-lfu — то же самое, но только среди ключей
 allkeys-random — удалять случайные ключи среди всех
 volatile-random — удалять случайные ключи, но только среди тех, что имеют TTL
 volatile-ttl — удалять ключи с наименьшим оставшимся TTL
+
+CountDownLatch startGate = new CountDownLatch(1)
+startGate.countDown()
+submit/invokeAll.
