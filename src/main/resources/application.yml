@@ -13,7 +13,18 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
 config:
   base-url: "http://localhost:8080/api/v1/"
   chars: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
@@ -23,4 +34,9 @@ config:
   scramble-number-neg: -4576744217476464767
   default-expires-at: "2099-12-31T23:59:59Z"
   cache:
-    ttl: 3600
+    ttl: 60
+  lock_prefix: "lock:"
+  lock_ttl_seconds: 5
+  lock_poll_interval_ms: 50
+  lock_max_wait_ms: 5000
+  redis_unlock_script: "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end"

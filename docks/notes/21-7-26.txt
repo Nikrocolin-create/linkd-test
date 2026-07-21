@@ -1,0 +1,19 @@
+Counter counter = meterRegistry.counter("cache.hit")
+counter.increment()
+
+redis-cli --scan
+redis-cli TTL "key"
+
+redis-cli DEL key_name
+
+eviction policies
+maxmemory 100mb
+maxmemory-policy allkeys-lru
+noeviction — не удалять ничего, при достижении лимита возвращать ошибку на команды записи (по умолчанию)
+allkeys-lru — удалять наименее недавно использованные ключи (Least Recently Used) среди всех ключей
+volatile-lru — то же самое, но только среди ключей с установленным TTL
+allkeys-lfu — удалять наименее часто используемые ключи (Least Frequently Used) среди всех ключей
+volatile-lfu — то же самое, но только среди ключей с TTL
+allkeys-random — удалять случайные ключи среди всех
+volatile-random — удалять случайные ключи, но только среди тех, что имеют TTL
+volatile-ttl — удалять ключи с наименьшим оставшимся TTL

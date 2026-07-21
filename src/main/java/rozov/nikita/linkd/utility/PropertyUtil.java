@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.core.script.RedisScript;
 
 import java.time.Instant;
 import java.util.Map;
@@ -21,4 +23,11 @@ public class PropertyUtil {
     private long scrambleNumberNeg;
     private Instant defaultExpiresAt;
     private Map<String, Long> cache;
+    private String lockPrefix = "lock:";
+    private long lockTtlSeconds = 5;
+    private long lockPollIntervalMs = 50;
+    private long lockMaxWaitMs = 5000;
+    private String redisUnlockScript;
+
+
 }
