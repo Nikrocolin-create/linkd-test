@@ -1,0 +1,22 @@
+1)
+ Чем `SELECT FOR UPDATE` отличается от `SELECT FOR SHARE`? Когда нужен пессимистичный лок вместо MVCC?
+ For share - не дает никому модифицировать выбранные строки, но позволяет другим транзакциям читать их. Это используется, когда нужно гарантировать, что данные не будут изменены другими транзакциями, пока текущая транзакция работает с ними.
+ for update - то же самое, но при этом сам изменяет выбранные строки
+ В Spring Data это @Lock(LockModeType.PESSIMISTIC_WRITE) → FOR UPDATE и PESSIMISTIC_READ → FOR SHARE
+
+ MVCC не защищает от lost update и write skew
+ @Lock(LockModeType.PESSIMISTIC_WRITE)
+ @Query("SELECT l FROM Link l WHERE l.shortCode = :shortCode")
+ Link findByShortCode(@Param("shortCode") String shortCode);
+
+ MVCC snapshot isolation levels:
+ READ COMMITTED — новый снапшот на каждый оператор;
+ REPEATABLE READ — один снапшот на всю транзакцию (это snapshot isolation);
+ SERIALIZABLE — тот же снапшот, что и у RR, плюс SSI-мониторинг (отслеживание опасных read-write зависимостей) сверху.
+
+2)
+Cache stampede / dog-pile: опиши 3 стратегии защиты (request coalescing, probabilistic early expiration, external locking). Tradeoffs каждой.
+Cache stampede / dog-pile — ситуация, когда множество клиентов одновременно обращаются к кэшу и обнаруживают, что данные отсутствуют (или устарели), что приводит к резкому увеличению нагрузки на базу данных.
+1) Request coalescing — когда первый запрос на данные инициирует загрузку из базы,
+2) Probabilistic early expiration — когда кэшируемые данные имеют случайный TTL, что уменьшает вероятность того, что все клиенты одновременно обнаружат устаревшие данные.
+3) External locking — когда перед загрузкой данных из базы, клиенты используют внешний механизм блокировки (например, Redis lock)
