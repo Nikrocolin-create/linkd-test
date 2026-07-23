@@ -21,3 +21,5 @@ volatile-ttl — удалять ключи с наименьшим оставш�
 CountDownLatch startGate = new CountDownLatch(1)
 startGate.countDown()
 submit/invokeAll.
+
+maxmemory-policy allkeys-lru/noeviction/allkeys-lfy/volatile-lfu

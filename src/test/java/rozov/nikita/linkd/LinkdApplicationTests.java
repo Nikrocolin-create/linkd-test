@@ -109,4 +109,32 @@ class LinkdApplicationTests {
         assertEquals(49, meterRegistry.counter("cache.hits", "cacheName","links").count());
         assertEquals(1, meterRegistry.counter("cache.misses", "cacheName","links").count());
     }
+
+    @Test
+    public void equalsCustomAliases () throws Exception {
+        String body = mockMvc.perform(post("/api/v1/links")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new CreateLinkReq("https://www.yandex.com/", "", null))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        LinkResp resp = objectMapper.readValue(body, LinkResp.class);
+
+        ExecutorService pool = Executors.newFixedThreadPool(50);
+        CountDownLatch startGate = new CountDownLatch(1);
+        List<Callable<Void>> tasks = IntStream.range(0, 50)
+                .mapToObj(i -> (Callable<Void>) () -> {
+                    startGate.await();
+                    mockMvc.perform(get(resp.getShortUrl()))
+                            .andExpect(status().is3xxRedirection());
+                    return null;
+                })
+                .toList();
+        List<Future<Void>> futures = tasks.stream().map(pool::submit).toList();
+        startGate.countDown();
+        for (Future<Void> f: futures) f.get();
+        pool.shutdown(); //blocks pool to accept new tasks
+        assertEquals(49, meterRegistry.counter("cache.hits", "cacheName","links").count());
+        assertEquals(1, meterRegistry.counter("cache.misses", "cacheName","links").count());
+    }
 }

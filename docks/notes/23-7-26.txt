@@ -1,0 +1,35 @@
+private final MongoDistributedLock distributedLock?
+distributedLock.tryAcquire
+StartupSnapshotTrigger с @EventListener(ApplicationReadyEvent.class)
+?ingress.enabled: true
+  lifecycle:
+    postStart:
+      exec:
+        command:
+          - /bin/sh
+          - -c
+          - |
+            for i in $(seq 1 30); do
+              if curl -sf -o /dev/null \
+                http://localhost:8080/rp2-ce-rule-sync/actuator/health/readiness; then
+                curl -sf -X POST \
+                  http://localhost:8080/rp2-ce-rule-sync/admin/publish-snapshot
+                exit 0
+              fi
+              sleep 5
+            done
+            exit 0
+
+routes + intracluster как работает, почему джае убираю route false, можем обращаться к серверу
+без routes не получается, потому что ingress не знает куда направлять запросы, а с routes true он знает куда направлять запросы и может обращаться к серверу напрямую
+ensureIndex - устаревший метод, теперь используется createIndex
+
+values.yaml:
+env:
+  KAFKA_TRUSTSTORE_PASSWORD:
+    valueFrom:
+      secretKeyRef:
+        name: kafka-truststore-secret
+        key: password
+env:
+  MONGODB_HOST: 'risparmiopostalesvil-pl-0.lvuye.mongodb.net'

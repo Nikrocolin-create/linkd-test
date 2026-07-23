@@ -32,4 +32,11 @@ public class LinkdExceptionHandler {
         problem.setTitle("Not Found");
         return problem;
     }
+    @ExceptionHandler(value= IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ProblemDetail handleIllegalArgumentException(IllegalArgumentException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Conflict");
+        return problem;
+    }
 }

@@ -18,18 +18,7 @@ public class CodeGenerator {
         return new String(result);
     }
 
-    public long decode(String s) {
-        long result = 0;
-        for (char c : s.toCharArray()) {
-            result = result * props.getBase() + props.getChars().indexOf(c);
-        }
-        return unscramble(result);
-    }
     public long scramble(long id) {
         return id * props.getScrambleNumberPos();
-    }
-
-    public long unscramble(long scrambled) {
-        return scrambled * props.getScrambleNumberNeg();
     }
 }

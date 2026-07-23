@@ -27,8 +27,8 @@ management:
         "[http.server.requests]": true
 config:
   base-url: "http://localhost:8080/api/v1/"
-  chars: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-  base: 62
+  chars: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_"
+  base: 64
   length: 8
   scramble-number-pos: 6364136223846793005
   scramble-number-neg: -4576744217476464767

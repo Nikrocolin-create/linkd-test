@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.URL;
 
 @AllArgsConstructor
@@ -12,10 +13,15 @@ import org.hibernate.validator.constraints.URL;
 @Data
 @Builder
 public class CreateLinkReq {
+    public CreateLinkReq(String url, String customAlias) {
+        this.url = url;
+        this.customAlias = customAlias;
+    }
     @NotBlank
     @URL
     private String url;
-    //private String customAlias;
+    @Length(max = 8)
+    private String customAlias;
     private Long ttl;
 }
 

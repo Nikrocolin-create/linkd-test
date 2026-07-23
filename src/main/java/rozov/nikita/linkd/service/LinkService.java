@@ -50,7 +50,16 @@ public class LinkService {
     @Transactional
     public LinkResp create(CreateLinkReq req, boolean cacheEnabled) {
         Long id = repository.nextId();
-        String shortCode = codeGenerator.encode(id);
+        String shortCode;
+        if (req.getCustomAlias() != null && !req.getCustomAlias().isEmpty()) {
+            Optional<Link> existing = repository.findByShortCodeAndExpiresAtAfter(req.getCustomAlias(), Instant.now());
+            if (existing.isPresent()) {
+                throw new IllegalArgumentException("Custom alias already exists: " + req.getCustomAlias());
+            }
+            shortCode = req.getCustomAlias();
+        } else {
+            shortCode = codeGenerator.encode(id);
+        }
         Instant expiresAt = req.getTtl() != null
                 ? Instant.now().plusSeconds(req.getTtl())
                 : props.getDefaultExpiresAt();
