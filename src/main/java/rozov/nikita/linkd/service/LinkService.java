@@ -71,10 +71,10 @@ public class LinkService {
                 .expiresAt(expiresAt)
                 .createdAt(Instant.now())
                 .build();
-        Optional<Link> existing = repository.findByLongUrl(req.getUrl());
+        Optional<Link> existing = repository.findByLongUrlAndExpiresAtAfter(req.getUrl(), Instant.now());
         if (existing.isPresent()) {
             Link found = existing.get();
-            return new LinkResp(found.getShortCode(), generateShortUrl(found.getShortCode()), expiresAt);
+            return new LinkResp(found.getShortCode(), generateShortUrl(found.getShortCode()), found.getExpiresAt());
         }
         link = repository.save(link);
         if (cacheEnabled) {

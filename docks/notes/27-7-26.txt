@@ -1,0 +1,2 @@
+redisTemplate.getConnectionFactory().getConnection().flushAll();
+?? throw spy bean detection exception

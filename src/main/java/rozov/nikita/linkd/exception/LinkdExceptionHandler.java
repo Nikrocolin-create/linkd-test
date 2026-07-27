@@ -1,6 +1,7 @@
 package rozov.nikita.linkd.exception;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -32,9 +33,9 @@ public class LinkdExceptionHandler {
         problem.setTitle("Not Found");
         return problem;
     }
-    @ExceptionHandler(value= IllegalArgumentException.class)
+    @ExceptionHandler(value= {IllegalArgumentException.class, DataIntegrityViolationException.class})
     @ResponseStatus(HttpStatus.CONFLICT)
-    public ProblemDetail handleIllegalArgumentException(IllegalArgumentException ex) {
+    public ProblemDetail handleConflictExceptions(RuntimeException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         problem.setTitle("Conflict");
         return problem;

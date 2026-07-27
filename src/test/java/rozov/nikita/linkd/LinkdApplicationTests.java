@@ -1,20 +1,25 @@
 package rozov.nikita.linkd;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.utility.TestcontainersConfiguration;
 import rozov.nikita.linkd.domain.Link;
 import rozov.nikita.linkd.dto.CreateLinkReq;
 import rozov.nikita.linkd.dto.LinkResp;
 import rozov.nikita.linkd.repository.LinkRepository;
+import rozov.nikita.linkd.service.LinkService;
 import rozov.nikita.linkd.utility.PropertyUtil;
 import tools.jackson.databind.ObjectMapper;
-import io.micrometer.core.instrument.MeterRegistry;
 
 import java.time.Instant;
 import java.util.List;
@@ -23,6 +28,9 @@ import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -31,8 +39,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 class LinkdApplicationTests {
-    @Autowired
+    @MockitoSpyBean
     private LinkRepository repository;
+    @MockitoSpyBean
+    private LinkService service;
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
     @Autowired
     private PropertyUtil props;
     @Autowired
@@ -44,6 +56,12 @@ class LinkdApplicationTests {
 	@Test
 	void contextLoads() {}
 
+    @AfterEach
+    public void tearDown() {
+        redisTemplate.getConnectionFactory().getConnection().flushAll();
+        meterRegistry.clear();
+        repository.deleteAll();
+    }
     @Test
     public void insertionDBTest() {
         String shortCode = "test";
@@ -92,49 +110,41 @@ class LinkdApplicationTests {
 
         LinkResp resp = objectMapper.readValue(body, LinkResp.class);
 
-        ExecutorService pool = Executors.newFixedThreadPool(50);
-        CountDownLatch startGate = new CountDownLatch(1);
-        List<Callable<Void>> tasks = IntStream.range(0, 50)
-                .mapToObj(i -> (Callable<Void>) () -> {
-                    startGate.await();
-                    mockMvc.perform(get(resp.getShortUrl()))
-                            .andExpect(status().is3xxRedirection());
-                    return null;
-                })
-                .toList();
-        List<Future<Void>> futures = tasks.stream().map(pool::submit).toList();
-        startGate.countDown();
-        for (Future<Void> f: futures) f.get();
-        pool.shutdown(); //blocks pool to accept new tasks
-        assertEquals(49, meterRegistry.counter("cache.hits", "cacheName","links").count());
-        assertEquals(1, meterRegistry.counter("cache.misses", "cacheName","links").count());
+        try (ExecutorService pool = Executors.newFixedThreadPool(50)) {
+            CountDownLatch startGate = new CountDownLatch(1);
+            List<Callable<Void>> tasks = IntStream.range(0, 50)
+                    .mapToObj(i -> (Callable<Void>) () -> {
+                        startGate.await();
+                        mockMvc.perform(get(resp.getShortUrl()))
+                                .andExpect(status().is3xxRedirection());
+                        return null;
+                    })
+                    .toList();
+            List<Future<Void>> futures = tasks.stream().map(pool::submit).toList();
+            startGate.countDown();
+            for (Future<Void> f : futures) f.get();
+            pool.shutdown(); //blocks pool to accept new tasks
+            assertEquals(49, meterRegistry.counter("cache.hits", "cacheName", "links").count());
+            assertEquals(1, meterRegistry.counter("cache.misses", "cacheName", "links").count());
+        }
     }
 
     @Test
     public void equalsCustomAliases () throws Exception {
-        String body = mockMvc.perform(post("/api/v1/links")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateLinkReq("https://www.yandex.com/", "", null))))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
+        CreateLinkReq req = new CreateLinkReq("https://www.yandex.com/", "custom", null);
+        String json = objectMapper.writeValueAsString(req);
 
-        LinkResp resp = objectMapper.readValue(body, LinkResp.class);
 
-        ExecutorService pool = Executors.newFixedThreadPool(50);
-        CountDownLatch startGate = new CountDownLatch(1);
-        List<Callable<Void>> tasks = IntStream.range(0, 50)
-                .mapToObj(i -> (Callable<Void>) () -> {
-                    startGate.await();
-                    mockMvc.perform(get(resp.getShortUrl()))
-                            .andExpect(status().is3xxRedirection());
-                    return null;
-                })
-                .toList();
-        List<Future<Void>> futures = tasks.stream().map(pool::submit).toList();
-        startGate.countDown();
-        for (Future<Void> f: futures) f.get();
-        pool.shutdown(); //blocks pool to accept new tasks
-        assertEquals(49, meterRegistry.counter("cache.hits", "cacheName","links").count());
-        assertEquals(1, meterRegistry.counter("cache.misses", "cacheName","links").count());
+        mockMvc.perform(post("/api/v1/links")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/links")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json))
+                .andExpect(status().isConflict());
+
+        verify(service, Mockito.times(2)).create(any(), anyBoolean());
     }
 }

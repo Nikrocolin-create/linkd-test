@@ -11,6 +11,6 @@ public interface LinkRepository extends JpaRepository<Link, Long> {
     Optional<Link> findByShortCodeAndExpiresAtAfter(String shortCode, Instant now);
     @Query(value = "SELECT nextval('links_id_seq')", nativeQuery = true)
     Long nextId();
-    Optional<Link> findByLongUrl(String longUrl);
+    Optional<Link> findByLongUrlAndExpiresAtAfter(String longUrl, Instant now);
 
 }

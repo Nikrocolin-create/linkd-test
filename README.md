@@ -26,7 +26,7 @@ ExceptionHandler — хорош (RFC 7807), но нет обработчика D
 Чтобы закрыть день до ~100%
 
 1. Настоящий 409 через перехват DataIntegrityViolationException (закрывает и гонку, и истёкший alias).
-2. Тест: занять существующий alias → 409.
+2. Тест: занять существующий alias → 409.
 3. Починить флейки-тест метрик (считать delta).
 4. Исправить expiresAt в дедупе по URL.
 5. Проработать письменно depth-вопросы (JVM heap Eden→Survivor→Old; enumeration/permutation).
