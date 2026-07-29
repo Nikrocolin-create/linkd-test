@@ -39,5 +39,5 @@ config:
   lock_prefix: "lock:"
   lock_ttl_seconds: 5
   lock_poll_interval_ms: 50
-  lock_max_wait_ms: 5000
+  lock_max_wait_ms: 150
   redis_unlock_script: "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end"

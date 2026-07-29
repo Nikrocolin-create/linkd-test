@@ -4,16 +4,18 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
+import rozov.nikita.linkd.domain.IdempotencyRecord;
 import rozov.nikita.linkd.domain.Link;
 import rozov.nikita.linkd.dto.CreateLinkReq;
 import rozov.nikita.linkd.dto.LinkResp;
+import rozov.nikita.linkd.repository.IdempotencyRecordRepository;
 import rozov.nikita.linkd.repository.LinkRepository;
 import rozov.nikita.linkd.utility.CodeGenerator;
 import rozov.nikita.linkd.utility.PropertyUtil;
@@ -29,15 +31,17 @@ import java.util.concurrent.TimeUnit;
 public class LinkService {
 
     private final LinkRepository repository;
+    private final IdempotencyRecordRepository idempotencyRecordRepository;
     private final PropertyUtil props;
     private final RedisTemplate<String, String> redisTemplate;
     private final CodeGenerator codeGenerator;
     private final RedisScript<Long> UNLOCK_SCRIPT;
     private final Counter cacheMissCounter;
     private final Counter cacheHitCounter;
-    public LinkService(LinkRepository repository, PropertyUtil props, CodeGenerator codeGenerator,
+    public LinkService(LinkRepository repository, IdempotencyRecordRepository idempotencyRecordRepository, PropertyUtil props, CodeGenerator codeGenerator,
                        RedisTemplate<String, String> redisTemplate, MeterRegistry meterRegistry) {
         this.repository = repository;
+        this.idempotencyRecordRepository = idempotencyRecordRepository;
         this.props = props;
         this.codeGenerator = codeGenerator;
         this.redisTemplate = redisTemplate;
@@ -48,43 +52,53 @@ public class LinkService {
 
 
     @Transactional
-    public LinkResp create(CreateLinkReq req, boolean cacheEnabled) {
-        Long id = repository.nextId();
-        String shortCode;
-        if (req.getCustomAlias() != null && !req.getCustomAlias().isEmpty()) {
-            Optional<Link> existing = repository.findByShortCodeAndExpiresAtAfter(req.getCustomAlias(), Instant.now());
+    public LinkResp create(CreateLinkReq req, boolean cacheEnabled, UUID idempotencyKey) {
+        if (idempotencyKey != null) {
+            Optional<IdempotencyRecord> existing = idempotencyRecordRepository.findByIdAndExpiresAtAfter(idempotencyKey, Instant.now());
             if (existing.isPresent()) {
-                throw new IllegalArgumentException("Custom alias already exists: " + req.getCustomAlias());
+                IdempotencyRecord found = existing.get();
+                return found.getResponse();
+            } else {
+                idempotencyRecordRepository.deleteById(idempotencyKey);
             }
-            shortCode = req.getCustomAlias();
-        } else {
-            shortCode = codeGenerator.encode(id);
         }
-        Instant expiresAt = req.getTtl() != null
-                ? Instant.now().plusSeconds(req.getTtl())
-                : props.getDefaultExpiresAt();
-        Link link = Link.builder()
-                .id(id)
-                .isNew(true)
-                .shortCode(shortCode)
-                .longUrl(req.getUrl())
-                .expiresAt(expiresAt)
-                .createdAt(Instant.now())
-                .build();
+        Long id = repository.nextId();
+        String shortCode = generateShortCode(req.getCustomAlias(), id);
         Optional<Link> existing = repository.findByLongUrlAndExpiresAtAfter(req.getUrl(), Instant.now());
         if (existing.isPresent()) {
             Link found = existing.get();
             return new LinkResp(found.getShortCode(), generateShortUrl(found.getShortCode()), found.getExpiresAt());
         }
+        Link link = createLinkEntity(req, shortCode, id);
         link = repository.save(link);
         if (cacheEnabled) {
             ValueOperations<String, String> ops = redisTemplate.opsForValue();
-            ops.set(shortCode, req.getUrl(), expiresAt.getEpochSecond() - Instant.now().getEpochSecond(), TimeUnit.SECONDS);
+            ops.set(link.getShortCode(), req.getUrl(), link.getExpiresAt().getEpochSecond() - Instant.now().getEpochSecond(), TimeUnit.SECONDS);
         }
-        log.info("Created new link: {} -> {}", shortCode, req.getUrl());
-        return new LinkResp(link.getShortCode(), generateShortUrl(link.getShortCode()), expiresAt);
+        if (idempotencyKey != null) {
+            IdempotencyRecord record = new IdempotencyRecord();
+            record.setId(idempotencyKey);
+            record.setResponse(new LinkResp(link.getShortCode(), generateShortUrl(link.getShortCode()), link.getExpiresAt()));
+            record.setCreatedAt(Instant.now());
+            record.setExpiresAt(link.getExpiresAt());
+            idempotencyRecordRepository.save(record);
+        }
+        log.info("Created new link: {} -> {}", link.getShortCode(), req.getUrl());
+        return new LinkResp(link.getShortCode(), generateShortUrl(link.getShortCode()), link.getExpiresAt());
     }
-
+    private String generateShortCode(String customAlias, Long id) {
+        String shortCode;
+        if (customAlias != null && !customAlias.isEmpty()) {
+            Optional<Link> existing = repository.findByShortCodeAndExpiresAtAfter(customAlias, Instant.now());
+            if (existing.isPresent()) {
+                throw new DataIntegrityViolationException("Custom alias already exists: " + customAlias);
+            }
+            shortCode = customAlias;
+        } else {
+            shortCode = codeGenerator.encode(id);
+        }
+        return shortCode;
+    }
     public String getLongUrl(String shortCode) {
         ValueOperations<String, String> valueOps = redisTemplate.opsForValue();
         String url = valueOps.get(shortCode);
@@ -149,5 +163,20 @@ public class LinkService {
     }
     private String generateShortUrl(String shortCode) {
         return props.getBaseUrl() + shortCode;
+    }
+
+    private Link createLinkEntity(CreateLinkReq req, String shortCode, Long id) {
+        Instant expiresAt = req.getTtl() != null
+                ? Instant.now().plusSeconds(req.getTtl())
+                : props.getDefaultExpiresAt();
+        Link link = Link.builder()
+                .id(id)
+                .isNew(true)
+                .shortCode(shortCode)
+                .longUrl(req.getUrl())
+                .expiresAt(expiresAt)
+                .createdAt(Instant.now())
+                .build();
+        return link;
     }
 }

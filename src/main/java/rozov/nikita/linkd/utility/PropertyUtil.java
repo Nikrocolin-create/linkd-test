@@ -26,7 +26,7 @@ public class PropertyUtil {
     private String lockPrefix = "lock:";
     private long lockTtlSeconds = 5;
     private long lockPollIntervalMs = 50;
-    private long lockMaxWaitMs = 5000;
+    private long lockMaxWaitMs = 150;
     private String redisUnlockScript;
 
 

@@ -6,12 +6,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import rozov.nikita.linkd.dto.CreateLinkReq;
 import rozov.nikita.linkd.dto.LinkResp;
 import rozov.nikita.linkd.service.LinkService;
 
 import java.net.URI;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -22,9 +22,10 @@ public class LinkController {
 
     @PostMapping("/links")
     public ResponseEntity<LinkResp> createLink(@RequestBody @Valid CreateLinkReq req,
-                                               @RequestParam(value = "cacheWarming", required = false, defaultValue = "false") boolean cacheWarming) {
+                                               @RequestParam(value = "cacheWarming", required = false, defaultValue = "false") boolean cacheWarming,
+                                               @RequestHeader(value = "Idempotency-Key", required = false) UUID idempotencyKey) {
         log.info("Received request to create link for URL: {}", req.getUrl());
-        LinkResp response = service.create(req, cacheWarming);
+        LinkResp response = service.create(req, cacheWarming, idempotencyKey);
         return ResponseEntity.created(URI.create(response.getShortUrl())).body(response);
     }
 

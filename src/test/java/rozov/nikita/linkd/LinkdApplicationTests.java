@@ -16,6 +16,7 @@ import org.testcontainers.utility.TestcontainersConfiguration;
 import rozov.nikita.linkd.domain.Link;
 import rozov.nikita.linkd.dto.CreateLinkReq;
 import rozov.nikita.linkd.dto.LinkResp;
+import rozov.nikita.linkd.repository.IdempotencyRecordRepository;
 import rozov.nikita.linkd.repository.LinkRepository;
 import rozov.nikita.linkd.service.LinkService;
 import rozov.nikita.linkd.utility.PropertyUtil;
@@ -41,6 +42,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class LinkdApplicationTests {
     @MockitoSpyBean
     private LinkRepository repository;
+    @MockitoSpyBean
+    private IdempotencyRecordRepository idempotencyRecordRepository;
     @MockitoSpyBean
     private LinkService service;
     @Autowired
@@ -145,6 +148,37 @@ class LinkdApplicationTests {
                 .content(json))
                 .andExpect(status().isConflict());
 
-        verify(service, Mockito.times(2)).create(any(), anyBoolean());
+        verify(service, Mockito.times(2)).create(any(), anyBoolean(), any());
+    }
+
+    @Test
+    public void idempotencyTest () throws Exception {
+        String idempotencyKey = "123e4567-e89b-12d3-a456-426614174000";
+        CreateLinkReq req = new CreateLinkReq("https://www.yandex.com/", null);
+        String json = objectMapper.writeValueAsString(req);
+
+        String firstBody = mockMvc.perform(post("/api/v1/links")
+                .header("Idempotency-Key", idempotencyKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        String secondBody = mockMvc.perform(post("/api/v1/links")
+                .header("Idempotency-Key", idempotencyKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        LinkResp first = objectMapper.readValue(firstBody, LinkResp.class);
+        LinkResp second = objectMapper.readValue(secondBody, LinkResp.class);
+
+        assertEquals(first.getShortCode(), second.getShortCode());
+        assertEquals(first.getShortUrl(), second.getShortUrl());
+        assertEquals(first.getExpiresAt(), second.getExpiresAt());
+
+        verify(repository, Mockito.times(0)).findByShortCodeAndExpiresAtAfter(any(), any());
+        verify(idempotencyRecordRepository, Mockito.times(2)).findByIdAndExpiresAtAfter(any(), any());
     }
 }
