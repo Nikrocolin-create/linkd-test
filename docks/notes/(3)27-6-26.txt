@@ -25,10 +25,4 @@ Location header Pattern
             .buildAndExpand(id)
             .toUri();
     return ResponseEntity.created(location).build();
-String body = mockMvc.perform(post("/api/v1/links")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new CreateLinkReq("https://www.google.com/", null))))
-        .andExpect(status().isCreated())
-        .andReturn().getResponse().getContentAsString();
-
 ?? CDC mongo postgres
