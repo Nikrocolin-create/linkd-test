@@ -56,7 +56,7 @@ public class LinkService {
     }
 
 
-    @Transactional(timeoutString = "${config.creation_transaction_ms:800}")
+    @Transactional
     public LinkResp create(CreateLinkReq req, boolean cacheEnabled, UUID idempotencyKey) {
 
         Long id = repository.nextId();
