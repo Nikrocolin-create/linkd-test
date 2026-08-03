@@ -74,7 +74,6 @@ class LinkdApplicationTests {
 
         Instant expiresAt = props.getDefaultExpiresAt();
         Link link = Link.builder()
-                .id(1L)
                 .shortCode("test")
                 .longUrl("https://test.test")
                 .expiresAt(expiresAt)

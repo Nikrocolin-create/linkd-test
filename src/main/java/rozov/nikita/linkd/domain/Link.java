@@ -13,16 +13,13 @@ import java.time.Instant;
 @Builder
 @Entity
 @Table(name = "links")
-public class Link implements Persistable<Long> {
+public class Link implements Persistable<String> {
     @Transient
     private boolean isNew = false;
     @Override public boolean isNew() { return isNew; }
+    @Override public String getId() { return shortCode; }
 
     @Id
-//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "links_seq")
-//    @SequenceGenerator(name = "links_seq", sequenceName = "links_id_seq", allocationSize = 1)
-    private Long id;
-
     @Column(name = "short_code", nullable = false, length = 8)
     private String shortCode;
 

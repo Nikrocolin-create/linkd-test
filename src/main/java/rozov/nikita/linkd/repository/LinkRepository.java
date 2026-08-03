@@ -7,7 +7,7 @@ import rozov.nikita.linkd.domain.Link;
 import java.time.Instant;
 import java.util.Optional;
 
-public interface LinkRepository extends JpaRepository<Link, Long> {
+public interface LinkRepository extends JpaRepository<Link, String> {
     Optional<Link> findByShortCodeAndExpiresAtAfter(String shortCode, Instant now);
     @Query(value = "SELECT nextval('links_id_seq')", nativeQuery = true)
     Long nextId();

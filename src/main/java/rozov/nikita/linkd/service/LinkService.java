@@ -167,7 +167,6 @@ public class LinkService {
                 ? Instant.now().plusSeconds(req.getTtl())
                 : props.getDefaultExpiresAt();
         Link link = Link.builder()
-                .id(id)
                 .isNew(true)
                 .shortCode(shortCode)
                 .longUrl(req.getUrl())

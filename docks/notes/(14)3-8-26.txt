@@ -186,3 +186,28 @@ lease/retention разведены по состояниям; тест на го
 Тесты требуют поднятого docker/docker-compose.yml (Testcontainers НЕ работают,
 идут в localhost:5432 из src/test/resources/application-test.yml).
 Команда: JAVA_HOME="/c/Users/9nik8/.jdks/openjdk-21" ./mvnw test
+----------------------
+Задача. Разбить links на нативное Postgres hash-партиционирование по short_code (4 партиции), с миграцией и проверкой partition pruning.
+Миграция. Перевести существующую таблицу в партиционированную «на месте» нельзя — ALTER TABLE ... PARTITION BY не существует. Схема: переименовать старую (RENAME TO links_old),
+ создать новую с PARTITION BY HASH (short_code), создать 4 партиции через FOR VALUES WITH (MODULUS 4, REMAINDER 0..3), перелить данные INSERT ... SELECT, после проверки
+  дропнуть старую.
+Генерация DDL существующей таблицы. Встроенного SHOW CREATE TABLE в Postgres нет. Способы: pg_dump --schema-only --table=... (канонично), psql \d+ (структура, но не готовый DDL),
+ в DBeaver — вкладка DDL в редакторе таблицы или правый клик → Generate SQL → DDL.
+OVERRIDING SYSTEM VALUE. Разрешает вручную вставить значение в колонку GENERATED ALWAYS AS IDENTITY (иначе — ошибка). Нужно, чтобы сохранить старые id при переливке.
+Для bigserial/BY DEFAULT не требуется.
+setval(pg_get_serial_sequence(...), max(id)). После ручной вставки id последовательность не двигается и выдаст конфликтующие значения. pg_get_serial_sequence находит имя
+последовательности, setval синхронизирует её с реальным максимумом. Тонкость: третий аргумент is_called (по умолчанию true → следующий = max+1); на пустой таблице корректнее
+передавать его явно.
+Проверка pruning. EXPLAIN (ANALYZE) SELECT * FROM links WHERE short_code = '...' должен показать скан одной партиции, а не Append по четырём. Hash-pruning работает только на
+равенстве (=) с константой/параметром — для lookup по short_code это идеально. Для prepared statements — runtime pruning (Subplans Removed: N).
+Проверить enable_partition_pruning = on.
+Ключевая проблема — уникальные ключи. На партиционированной таблице любой PK/UNIQUE обязан включать колонку партиции. В исходной схеме были два независимых одноколоночных ключа: PRIMARY KEY (id) и UNIQUE (short_code).
+Партиция по short_code → ломается PRIMARY KEY (id).
+Партиция по id → ломается UNIQUE (short_code).
+Куда ни партиционируй — один constraint падает. Это структурное ограничение, не обходится настройкой.
+Итоговое решение. id в этой схеме избыточен. short_code — естественный PK: уже уникален, ключ поиска и ключ партиции одновременно. Финальная таблица — PRIMARY KEY (short_code),
+ PARTITION BY HASH (short_code), без id. Перед удалением id проверить: нет ли FK на него из других таблиц, не капризничает ли ORM без числового PK, не нужен ли монотонный
+ порядок (закрывается created_at).
+Индексы. Неуникальный CREATE INDEX (напр. на long_url) работает нормально — становится partitioned index с локальной копией на каждой партиции. Ограничение «включать ключ
+партиции» касается только PK/UNIQUE.
+Хочешь — оформлю это в .md файл или соберу финальные up.sql/down.sql для миграции.
