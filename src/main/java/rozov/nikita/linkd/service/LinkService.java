@@ -16,7 +16,6 @@ import rozov.nikita.linkd.domain.IdempotencyStatus;
 import rozov.nikita.linkd.domain.Link;
 import rozov.nikita.linkd.dto.CreateLinkReq;
 import rozov.nikita.linkd.dto.LinkResp;
-import rozov.nikita.linkd.exception.IdempotencyTimeoutException;
 import rozov.nikita.linkd.repository.IdempotencyRecordRepository;
 import rozov.nikita.linkd.repository.LinkRepository;
 import rozov.nikita.linkd.utility.CodeGenerator;
@@ -56,7 +55,7 @@ public class LinkService {
     }
 
 
-    @Transactional
+    @Transactional(timeoutString = "${config.creation_transaction_seconds:3}")
     public LinkResp create(CreateLinkReq req, boolean cacheEnabled, UUID idempotencyKey) {
 
         Long id = repository.nextId();
@@ -183,7 +182,7 @@ public class LinkService {
         record.setId(idempotencyKey);
         record.setResponse(new LinkResp(link.getShortCode(), generateShortUrl(link.getShortCode()), link.getExpiresAt()));
         record.setCreatedAt(Instant.now());
-        record.setExpiresAt(link.getExpiresAt());
+        record.setExpiresAt(Instant.now().plusSeconds(props.getIdempotencyRetentionSeconds()));
         record.setStatus(IdempotencyStatus.DONE);
         return idempotencyRecordRepository.save(record);
     }

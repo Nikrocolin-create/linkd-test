@@ -23,7 +23,9 @@ import rozov.nikita.linkd.utility.PropertyUtil;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.stream.IntStream;
 
@@ -183,4 +185,42 @@ class LinkdApplicationTests {
         verify(idempotencyRecordRepository, Mockito.times(2)).claim(any(), any());
         verify(idempotencyRecordRepository, Mockito.times(1)).findById(any());
     }
+    @Test
+    public void concurrentIdempotencyTest() throws Exception {
+        int n = 20;
+        String idempotencyKey = UUID.randomUUID().toString();
+        String json = objectMapper.writeValueAsString(
+                new CreateLinkReq("https://www.concurrent-test.com/", null));
+
+        record Result(int status, String body) {}
+
+        try (ExecutorService pool = Executors.newFixedThreadPool(n)) {
+            CountDownLatch startGate = new CountDownLatch(1);
+            System.out.println("start");
+            List<Callable<Result>> tasks = IntStream.range(0, n)
+                    .mapToObj(i -> (Callable<Result>) () -> {
+                        startGate.await();
+                        var response = mockMvc.perform(post("/api/v1/links")
+                                        .header("Idempotency-Key", idempotencyKey)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(json))
+                                .andReturn().getResponse();
+                        return new Result(response.getStatus(), response.getContentAsString());
+                    })
+                    .toList();
+
+            List<Future<Result>> futures = tasks.stream().map(pool::submit).toList();
+            startGate.countDown();
+
+            List<Result> results = new ArrayList<>();
+            for (Future<Result> f : futures) results.add(f.get());
+            pool.shutdown();
+            results.stream().forEach(System.out::println);
+            assertEquals(1, repository.count(), "в links должна быть ровно одна строка");
+            assertEquals(1, idempotencyRecordRepository.count(), "ключ идемпотентности должен быть один");
+            assertEquals(1, results.stream().map(Result::body).distinct().count(), "все тела должны совпадать");
+            assertEquals(List.of(201), results.stream().map(Result::status).distinct().toList());
+        }
+    }
+
 }

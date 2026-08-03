@@ -26,7 +26,7 @@ public class IdempotencyService {
 
     @Transactional
     public boolean tryClaim(UUID idempotencyKey) {
-        return idempotencyRecordRepository.claim(idempotencyKey, Instant.now().plusSeconds(props.getIdempotencyRetention())) > 0;
+        return idempotencyRecordRepository.claim(idempotencyKey, Instant.now().plusSeconds(props.getIdempotencyLeaseSeconds())) > 0;
     }
     public Optional<LinkResp> readResult(UUID idempotencyKey) {
         IdempotencyRecord rec = idempotencyRecordRepository.findById(idempotencyKey).orElseThrow(

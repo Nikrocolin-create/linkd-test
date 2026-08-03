@@ -15,14 +15,26 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+    open-in-view: false
 
 config:
   base-url: "http://localhost:8080/api/v1/"
-  chars: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-  base: 62
+  chars: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_"
+  base: 64
   length: 8
   scramble-number-pos: 6364136223846793005
   scramble-number-neg: -4576744217476464767
   default-expires-at: "2099-12-31T23:59:59Z"
+  long-url-index: long_url_unique
   cache:
-    ttl: 3600
+    ttl: 60
+  lock_prefix: "lock:"
+  lock_ttl_seconds: 5
+  lock_poll_interval_ms: 50
+  lock_max_wait_ms: 150
+  redis_unlock_script: "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end"
+  creation_transaction_seconds: 3
+  idempotency_lease_seconds: 5
+  idempotency_retention_seconds: 86400
+  idempotency_max_wait_ms: 2000
+  idempotency_poll_interval_ms: 200
