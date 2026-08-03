@@ -64,6 +64,7 @@ class LinkdApplicationTests {
         redisTemplate.getConnectionFactory().getConnection().flushAll();
         meterRegistry.clear();
         repository.deleteAll();
+        idempotencyRecordRepository.deleteAll();
     }
     @Test
     public void insertionDBTest() {
@@ -179,6 +180,7 @@ class LinkdApplicationTests {
         assertEquals(first.getExpiresAt(), second.getExpiresAt());
 
         verify(repository, Mockito.times(0)).findByShortCodeAndExpiresAtAfter(any(), any());
-        verify(idempotencyRecordRepository, Mockito.times(2)).findByIdAndExpiresAtAfter(any(), any());
+        verify(idempotencyRecordRepository, Mockito.times(2)).claim(any(), any());
+        verify(idempotencyRecordRepository, Mockito.times(1)).findById(any());
     }
 }

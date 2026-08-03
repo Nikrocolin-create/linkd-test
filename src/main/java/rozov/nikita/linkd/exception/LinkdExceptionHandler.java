@@ -48,4 +48,11 @@ public class LinkdExceptionHandler {
         problem.setTitle("Type Mismatch");
         return problem;
     }
+    @ExceptionHandler(value = IdempotencyTimeoutException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ProblemDetail handleIdempotencyTimeoutException(IdempotencyTimeoutException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Timeout idempotency");
+        return problem;
+    }
 }

@@ -25,6 +25,8 @@ public class IdempotencyRecord implements Persistable<UUID> {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private LinkResp response;
+    @Enumerated(value=EnumType.STRING)
+    private IdempotencyStatus status;
     private Instant createdAt;
     private Instant expiresAt;
 }

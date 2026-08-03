@@ -3,7 +3,6 @@ package rozov.nikita.linkd.service;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -11,10 +10,13 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import rozov.nikita.linkd.domain.IdempotencyRecord;
+import rozov.nikita.linkd.domain.IdempotencyStatus;
 import rozov.nikita.linkd.domain.Link;
 import rozov.nikita.linkd.dto.CreateLinkReq;
 import rozov.nikita.linkd.dto.LinkResp;
+import rozov.nikita.linkd.exception.IdempotencyTimeoutException;
 import rozov.nikita.linkd.repository.IdempotencyRecordRepository;
 import rozov.nikita.linkd.repository.LinkRepository;
 import rozov.nikita.linkd.utility.CodeGenerator;
@@ -25,6 +27,8 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import static java.lang.Thread.sleep;
 
 @Service
 @Slf4j
@@ -38,6 +42,7 @@ public class LinkService {
     private final RedisScript<Long> UNLOCK_SCRIPT;
     private final Counter cacheMissCounter;
     private final Counter cacheHitCounter;
+
     public LinkService(LinkRepository repository, IdempotencyRecordRepository idempotencyRecordRepository, PropertyUtil props, CodeGenerator codeGenerator,
                        RedisTemplate<String, String> redisTemplate, MeterRegistry meterRegistry) {
         this.repository = repository;
@@ -46,27 +51,22 @@ public class LinkService {
         this.codeGenerator = codeGenerator;
         this.redisTemplate = redisTemplate;
         this.UNLOCK_SCRIPT = new DefaultRedisScript<>(props.getRedisUnlockScript(), Long.class);
-        this.cacheHitCounter = meterRegistry.counter("cache.hits", "cacheName","links");
-        this.cacheMissCounter = meterRegistry.counter("cache.misses", "cacheName","links");
+        this.cacheHitCounter = meterRegistry.counter("cache.hits", "cacheName", "links");
+        this.cacheMissCounter = meterRegistry.counter("cache.misses", "cacheName", "links");
     }
 
 
     @Transactional
     public LinkResp create(CreateLinkReq req, boolean cacheEnabled, UUID idempotencyKey) {
-        if (idempotencyKey != null) {
-            Optional<IdempotencyRecord> existing = idempotencyRecordRepository.findByIdAndExpiresAtAfter(idempotencyKey, Instant.now());
-            if (existing.isPresent()) {
-                IdempotencyRecord found = existing.get();
-                return found.getResponse();
-            } else {
-                idempotencyRecordRepository.deleteById(idempotencyKey);
-            }
-        }
+
         Long id = repository.nextId();
         String shortCode = generateShortCode(req.getCustomAlias(), id);
         Optional<Link> existing = repository.findByLongUrlAndExpiresAtAfter(req.getUrl(), Instant.now());
         if (existing.isPresent()) {
             Link found = existing.get();
+            if (idempotencyKey != null) {
+                idempotencySave(found, idempotencyKey);
+            }
             return new LinkResp(found.getShortCode(), generateShortUrl(found.getShortCode()), found.getExpiresAt());
         }
         Link link = createLinkEntity(req, shortCode, id);
@@ -76,16 +76,12 @@ public class LinkService {
             ops.set(link.getShortCode(), req.getUrl(), link.getExpiresAt().getEpochSecond() - Instant.now().getEpochSecond(), TimeUnit.SECONDS);
         }
         if (idempotencyKey != null) {
-            IdempotencyRecord record = new IdempotencyRecord();
-            record.setId(idempotencyKey);
-            record.setResponse(new LinkResp(link.getShortCode(), generateShortUrl(link.getShortCode()), link.getExpiresAt()));
-            record.setCreatedAt(Instant.now());
-            record.setExpiresAt(link.getExpiresAt());
-            idempotencyRecordRepository.save(record);
+            idempotencySave(link, idempotencyKey);
         }
         log.info("Created new link: {} -> {}", link.getShortCode(), req.getUrl());
         return new LinkResp(link.getShortCode(), generateShortUrl(link.getShortCode()), link.getExpiresAt());
     }
+
     private String generateShortCode(String customAlias, Long id) {
         String shortCode;
         if (customAlias != null && !customAlias.isEmpty()) {
@@ -99,6 +95,7 @@ public class LinkService {
         }
         return shortCode;
     }
+
     public String getLongUrl(String shortCode) {
         ValueOperations<String, String> valueOps = redisTemplate.opsForValue();
         String url = valueOps.get(shortCode);
@@ -135,7 +132,7 @@ public class LinkService {
         long waited = 0;
         while (waited < props.getLockMaxWaitMs()) {
             try {
-                Thread.sleep(props.getLockPollIntervalMs());
+                sleep(props.getLockPollIntervalMs());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Interrupted while waiting for cache lock", e);
@@ -161,6 +158,7 @@ public class LinkService {
                     log.info("Deleted link with short code: {}", shortCode);
                 });
     }
+
     private String generateShortUrl(String shortCode) {
         return props.getBaseUrl() + shortCode;
     }
@@ -178,5 +176,15 @@ public class LinkService {
                 .createdAt(Instant.now())
                 .build();
         return link;
+    }
+
+    private IdempotencyRecord idempotencySave(Link link, UUID idempotencyKey) {
+        IdempotencyRecord record = new IdempotencyRecord();
+        record.setId(idempotencyKey);
+        record.setResponse(new LinkResp(link.getShortCode(), generateShortUrl(link.getShortCode()), link.getExpiresAt()));
+        record.setCreatedAt(Instant.now());
+        record.setExpiresAt(link.getExpiresAt());
+        record.setStatus(IdempotencyStatus.DONE);
+        return idempotencyRecordRepository.save(record);
     }
 }

@@ -7,19 +7,19 @@ export default function () {
       method: 'POST',
       url: 'http://localhost:8080/api/v1/links',
       body: JSON.stringify({
-                             "url": "https://learn.mongodb2.com",
-                             "customAlias": "string3"
+                             "url": "https://learn.mongodb7.com",
+                             "customAlias": "string7"
                            }),
-      params: { headers: { 'accept': '*/*', 'Content-Type': 'application/json', 'Idempotency-Key': '02941d4e-1fe3-4f18-b342-b67d4fbd44bf' } },
+      params: { headers: { 'accept': '*/*', 'Content-Type': 'application/json', 'Idempotency-Key': '02941d4e-1fe3-4f18-b342-b67d4fbd44b7' } },
     },
     {
       method: 'POST',
       url: 'http://localhost:8080/api/v1/links',
       body: JSON.stringify({
-                             "url": "https://learn.mongodb2.com",
-                             "customAlias": "string3"
+                             "url": "https://learn.mongodb7.com",
+                             "customAlias": "string7"
                            }),
-      params: { headers: { 'accept': '*/*', 'Content-Type': 'application/json', 'Idempotency-Key': '02941d4e-1fe3-4f18-b342-b67d4fbd44bf' } },
+      params: { headers: { 'accept': '*/*', 'Content-Type': 'application/json', 'Idempotency-Key': '02941d4e-1fe3-4f18-b342-b67d4fbd44b7' } },
     },
   ]);
 

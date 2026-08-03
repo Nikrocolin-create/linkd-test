@@ -1,0 +1,3 @@
+ALTER TABLE idempotency ALTER COLUMN response DROP NOT NULL;
+ALTER TABLE idempotency ADD COLUMN status varchar(15) DEFAULT 'DONE' NOT NULL;
+
