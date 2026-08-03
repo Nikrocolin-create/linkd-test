@@ -23,7 +23,7 @@ public class LinkController {
     @PostMapping("/links")
     public ResponseEntity<LinkResp> createLink(@RequestBody @Valid CreateLinkReq req,
                                                @RequestParam(value = "cacheWarming", required = false, defaultValue = "false") boolean cacheWarming,
-                                               @RequestHeader(value = "Idempotency-Key", required = false) UUID idempotencyKey) throws InterruptedException {
+                                               @RequestHeader(value = "Idempotency-Key", required = false) UUID idempotencyKey){
         log.info("Received request to create link for URL: {}", req.getUrl());
         LinkResp response = manager.create(req, cacheWarming, idempotencyKey);
         return ResponseEntity.created(URI.create(response.getShortUrl())).body(response);

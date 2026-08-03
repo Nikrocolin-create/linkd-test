@@ -21,7 +21,7 @@ public class LinkManager {
     private final IdempotencyService idempotencyService;
     private final LinkService linkService;
     private final PropertyUtil props;
-    public LinkResp create(CreateLinkReq req, boolean cacheEnabled, UUID idempotencyKey) throws InterruptedException {
+    public LinkResp create(CreateLinkReq req, boolean cacheEnabled, UUID idempotencyKey) {
         LinkResp resp = null;
         if (idempotencyKey != null) {
             try {
@@ -48,6 +48,7 @@ public class LinkManager {
                     }
                 }
             } catch(InterruptedException e) {
+                Thread.currentThread().interrupt();
                 throw new RuntimeException(e);
             }
         } else {

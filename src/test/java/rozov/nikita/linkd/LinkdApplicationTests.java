@@ -12,7 +12,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.utility.TestcontainersConfiguration;
+import rozov.nikita.linkd.configuration.TestcontainersConfiguration;
 import rozov.nikita.linkd.domain.Link;
 import rozov.nikita.linkd.dto.CreateLinkReq;
 import rozov.nikita.linkd.dto.LinkResp;
