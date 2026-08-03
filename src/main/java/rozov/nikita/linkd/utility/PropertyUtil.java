@@ -26,7 +26,7 @@ public class PropertyUtil {
     private long lockPollIntervalMs = 50;
     private long lockMaxWaitMs = 150;
     private String redisUnlockScript;
-    private long idempotencyMaxWaitMs;
-    private long idempotencyPollIntervalMs;
+    private long idempotencyMaxWaitMs = 1000;
+    private long idempotencyPollIntervalMs = 200;
 
 }
