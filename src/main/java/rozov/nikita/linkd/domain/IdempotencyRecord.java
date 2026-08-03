@@ -28,5 +28,6 @@ public class IdempotencyRecord implements Persistable<UUID> {
     @Enumerated(value=EnumType.STRING)
     private IdempotencyStatus status;
     private Instant createdAt;
+    private Instant leaseUntil;
     private Instant expiresAt;
 }

@@ -28,5 +28,6 @@ public class PropertyUtil {
     private String redisUnlockScript;
     private long idempotencyMaxWaitMs;
     private long idempotencyPollIntervalMs;
+    private long idempotencyLeaseMs;
 
 }

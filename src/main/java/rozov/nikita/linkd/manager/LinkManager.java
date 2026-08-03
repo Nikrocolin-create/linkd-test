@@ -2,6 +2,7 @@ package rozov.nikita.linkd.manager;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import rozov.nikita.linkd.dto.CreateLinkReq;
 import rozov.nikita.linkd.dto.LinkResp;
 import rozov.nikita.linkd.exception.IdempotencyTimeoutException;
@@ -21,6 +22,7 @@ public class LinkManager {
     private final IdempotencyService idempotencyService;
     private final LinkService linkService;
     private final PropertyUtil props;
+
     public LinkResp create(CreateLinkReq req, boolean cacheEnabled, UUID idempotencyKey) {
         LinkResp resp = null;
         if (idempotencyKey != null) {
