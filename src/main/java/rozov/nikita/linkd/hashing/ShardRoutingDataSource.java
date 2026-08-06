@@ -1,0 +1,10 @@
+package rozov.nikita.linkd.hashing;
+
+import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
+
+public class ShardRoutingDataSource extends AbstractRoutingDataSource {
+    @Override
+    protected Object determineCurrentLookupKey() {
+        return ShardContext.get();   // ключ, по которому выбирается DataSource
+    }
+}

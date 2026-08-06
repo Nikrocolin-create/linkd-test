@@ -109,11 +109,9 @@ GET /actuator/prometheus    метрики
 ### Postgres (источник правды)
 
 ```sql
--- links: основная таблица
-id           BIGINT       PK (sequence-backed)
+-- links: основная таблица шардирование по short_code, 4 шарда
 short_code   VARCHAR(16)  UNIQUE NOT NULL        -- индекс под F4
 long_url     TEXT         NOT NULL
-owner_id     BIGINT       NULL                   -- заглушка
 created_at   TIMESTAMPTZ  NOT NULL DEFAULT now()
 expires_at   TIMESTAMPTZ  NULL
 
@@ -121,6 +119,7 @@ expires_at   TIMESTAMPTZ  NULL
 key          UUID         PK
 response     JSONB        NOT NULL
 created_at   TIMESTAMPTZ  NOT NULL
+expires_at   TIMESTAMPTZ  NULL
 
 -- outbox: событие клика до публикации (см. §7)
 id           BIGINT       PK
