@@ -9,5 +9,4 @@ public class LinkdApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(LinkdApplication.class, args);
 	}
-
 }

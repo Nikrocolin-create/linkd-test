@@ -46,3 +46,8 @@ config:
   idempotency_retention_seconds: 86400
   idempotency_max_wait_ms: 1000
   idempotency_poll_interval_ms: 200
+
+rate_limiter:
+  capacity: 20
+  refill_tokens: 10
+  refill_period_nanos: 500_000_000

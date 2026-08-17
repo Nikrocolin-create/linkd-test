@@ -55,4 +55,12 @@ public class LinkdExceptionHandler {
         problem.setTitle("Timeout idempotency");
         return problem;
     }
+    // works on FilterChain level
+//    @ExceptionHandler(value = TooManyRequestsException.class)
+//    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+//    public ProblemDetail handleTooManyRequestsException(TooManyRequestsException ex) {
+//        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
+//        problem.setTitle("Timeout idempotency");
+//        return problem;
+//    }
 }

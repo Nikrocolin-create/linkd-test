@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.URL;
+import rozov.nikita.linkd.utility.SafeUrl;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -19,6 +20,7 @@ public class CreateLinkReq {
     }
     @NotBlank
     @URL
+    @SafeUrl
     private String url;
     @Length(max = 8)
     private String customAlias;
