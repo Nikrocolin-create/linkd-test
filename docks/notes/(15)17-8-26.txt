@@ -1,0 +1,11 @@
+Исключения не перехватываются из filterChain
+Лучше редактировать ответ прямо там:
+    response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+    response.setHeader("Retry-After", "1");
+    response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+    response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+    response.getWriter().write("{"status":429,"title":"Too Many Requests","detail":"Rate limit exceeded"}");
+Для логики для каждого запроса лучше использовать FilterChain, спринг автоматически применяет, нужно только автоматически навесить компонент
+Метода атомиков compareAndSet(), updateAndGet(()->{}), decrementAndGet()
+Timestamp can be get System.nanoTime()
+rate-limiter можно имплементировать с помощью token bucket, где на каждого пользователя есть свой лимит токенов, который пополняется через какой то промежуток времени
