@@ -39,7 +39,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Import(TestcontainersConfiguration.class)
-@SpringBootTest
+@SpringBootTest(
+        properties =  {"rate-limiter.enabled=false"}
+)
 @AutoConfigureMockMvc
 class LinkdApplicationTests {
     @MockitoSpyBean
@@ -189,13 +191,12 @@ class LinkdApplicationTests {
         int n = 20;
         String idempotencyKey = UUID.randomUUID().toString();
         String json = objectMapper.writeValueAsString(
-                new CreateLinkReq("https://www.concurrent-test.com/", null));
+                new CreateLinkReq("https://example.com/", null));
 
         record Result(int status, String body) {}
 
         try (ExecutorService pool = Executors.newFixedThreadPool(n)) {
             CountDownLatch startGate = new CountDownLatch(1);
-            System.out.println("start");
             List<Callable<Result>> tasks = IntStream.range(0, n)
                     .mapToObj(i -> (Callable<Result>) () -> {
                         startGate.await();
@@ -214,7 +215,6 @@ class LinkdApplicationTests {
             List<Result> results = new ArrayList<>();
             for (Future<Result> f : futures) results.add(f.get());
             pool.shutdown();
-            results.stream().forEach(System.out::println);
             assertEquals(1, repository.count(), "в links должна быть ровно одна строка");
             assertEquals(1, idempotencyRecordRepository.count(), "ключ идемпотентности должен быть один");
             assertEquals(1, results.stream().map(Result::body).distinct().count(), "все тела должны совпадать");

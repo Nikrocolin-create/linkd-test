@@ -16,10 +16,16 @@ public class RateLimiterConfig {
 
     @Bean
     public FilterRegistrationBean<RateLimiterFilter> rateLimiterFilter(RateLimiterUtil util) {
-        log.info("Filter bean initialized");
+        log.debug("Filter bean initialized");
         FilterRegistrationBean<RateLimiterFilter> filter = new FilterRegistrationBean<>(new RateLimiterFilter(util));
         filter.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
         filter.addUrlPatterns("/api/*");
         return filter;
     }
+//    @Bean
+//    public RateLimiterFilter rateLimiterFilter(RateLimiterUtil util) {
+//        log.info("Filter bean initialized");
+//        RateLimiterFilter filter = new RateLimiterFilter(util);
+//        return filter;
+//    }
 }

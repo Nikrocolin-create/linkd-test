@@ -1,11 +1,13 @@
 package rozov.nikita.linkd.ratelimiter;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import rozov.nikita.linkd.exception.TooManyRequestsException;
 
 import java.util.concurrent.atomic.AtomicLong;
 
 @AllArgsConstructor
+@Slf4j
 public class TokenBucket {
     private long capacity;
     private long refillTokens;
@@ -16,10 +18,10 @@ public class TokenBucket {
 
     public void tryConsume() {
         refill();
-        if (tokens.get() <= 0) {
+        long prev = tokens.getAndUpdate(t -> t > 0 ? t-1 : t);
+        if (prev <= 0) {
             throw new TooManyRequestsException("Too many requests, wait before trying again");
         }
-        tokens.decrementAndGet();
     }
     private void refill() {
         long now = System.nanoTime();
@@ -33,7 +35,8 @@ public class TokenBucket {
         long newLast = last + newTokens * refillPeriodNanos / refillTokens;
 
         if (lastRefillTimestamp.compareAndSet(last, newLast)) {
-            tokens.updateAndGet(t->Math.min(tokens.get() + newTokens, capacity));
+//            log.info("updated");
+            tokens.updateAndGet(t->Math.min(t + newTokens, capacity));
         }
     }
 }

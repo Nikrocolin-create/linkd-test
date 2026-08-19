@@ -12,7 +12,6 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.utility.TestcontainersConfiguration;
 import rozov.nikita.linkd.configuration.PostgresTestConfig;
 import rozov.nikita.linkd.configuration.RedisTestConfig;
 import rozov.nikita.linkd.dto.CreateLinkReq;
@@ -29,7 +28,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
-@SpringBootTest
+@SpringBootTest(
+        properties =  {"rate-limiter.enabled=false"}
+)
 @Import({PostgresTestConfig.class, RedisTestConfig.class})
 @AutoConfigureMockMvc
 public class RedisTests {

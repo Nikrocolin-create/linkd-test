@@ -58,3 +58,4 @@ config:
 #  capacity: 2
 #  refill_tokens: 1
 #  refill_period_nanos: 500_000_000_000_000 #5000 sec
+#  enabled: false
