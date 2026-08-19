@@ -20,7 +20,9 @@ Map<String, String> errors = ex.getBindingResult().getFieldErrors().stream()
 
 **6. `forStatusAndDetail` vs `ResponseEntityExceptionHandler`.** Фабричный метод просто собирает объект — вы сами решаете, где и как его вернуть. Наследование от `ResponseEntityExceptionHandler` даёт готовые хендлеры для ~15 стандартных Spring MVC исключений (включая `MethodArgumentNotValidException`, `HttpMessageNotReadableException`, `NoHandlerFoundException`), которые можно точечно переопределять. `spring.mvc.problemdetails.enabled=true` включает автоматическую отдачу ProblemDetail для этих встроенных исключений вообще без своего `@ControllerAdvice`.
 
-**7. `@ConfigurationProperties(prefix = "mail")`.** Поле `hostName` связывается с ключом `mail.host-name` (работает relaxed binding: `hostName`, `host-name`, `HOST_NAME` — всё одно). Включение: либо `@Component` на самом классе, либо `@EnableConfigurationProperties(MailProps.class)`, либо `@ConfigurationPropertiesScan` на главном классе. Плюсы против `@Value`: типобезопасность, группировка связанных настроек, поддержка вложенных объектов и списков, валидация, метаданные для автодополнения в IDE.
+**7. `@ConfigurationProperties(prefix = "mail")`.** Поле `hostName` связывается с ключом `mail.host-name` (работает relaxed binding: `hostName`, `host-name`, `HOST_NAME` — всё одно). 
+Включение: либо `@Component` на самом классе, либо `@EnableConfigurationProperties(MailProps.class)`, либо `@ConfigurationPropertiesScan` на главном классе. 
+Плюсы против `@Value`: типобезопасность, группировка связанных настроек, поддержка вложенных объектов и списков, валидация, метаданные для автодополнения в IDE.
 
 **8. Иммутабельность и валидация.** Да — `record MailProps(String hostName, int port) {}` или класс с одним конструктором (constructor binding). На класс вешается `@Validated`, на поля — обычные jakarta-аннотации (`@NotBlank`, `@Min`). Если значение не пройдёт проверку, контекст не поднимется: приложение упадёт на старте с `BindValidationException` — это «fail fast» и это хорошо, лучше упасть при деплое, чем на первом запросе.
 
