@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 @Component
 @AllArgsConstructor
 public class CodeGenerator {
-    private PropertyUtil props;
+    private ConfigProperties props;
 
     public String encode(long n) {
         n = scramble(n);

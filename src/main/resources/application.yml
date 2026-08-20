@@ -51,4 +51,7 @@ rate_limiter:
   capacity: 20
   refill_tokens: 10
   refill_period_nanos: 500_000_000
+  eviction_period_seconds: 60
+  maximum_buckets: 100_000
   enabled: true
+  type: redis

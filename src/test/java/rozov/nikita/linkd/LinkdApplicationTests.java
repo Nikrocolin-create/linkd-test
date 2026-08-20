@@ -19,7 +19,7 @@ import rozov.nikita.linkd.dto.LinkResp;
 import rozov.nikita.linkd.repository.IdempotencyRecordRepository;
 import rozov.nikita.linkd.repository.LinkRepository;
 import rozov.nikita.linkd.service.LinkService;
-import rozov.nikita.linkd.utility.PropertyUtil;
+import rozov.nikita.linkd.utility.ConfigProperties;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
@@ -53,7 +53,7 @@ class LinkdApplicationTests {
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
     @Autowired
-    private PropertyUtil props;
+    private ConfigProperties props;
     @Autowired
     private MockMvc mockMvc;
     @Autowired

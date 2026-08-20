@@ -36,11 +36,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
                 "rate-limiter.enabled=true",
                 "rate-limiter.capacity=2",
                 "rate-limiter.refill_tokens=1",
-                "rate-limiter.type=custom",
+                "rate-limiter.type=redis",
                 "rate-limiter.refill_period_nanos=500000000000000"}
 )
 @AutoConfigureMockMvc
-class RateLimiterTests {
+class RateLimiterRedisTests {
     @MockitoSpyBean
     private LinkRepository repository;
     @MockitoSpyBean

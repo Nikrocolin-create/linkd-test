@@ -9,7 +9,7 @@ import rozov.nikita.linkd.domain.IdempotencyStatus;
 import rozov.nikita.linkd.dto.LinkResp;
 import rozov.nikita.linkd.exception.IdempotencyTimeoutException;
 import rozov.nikita.linkd.repository.IdempotencyRecordRepository;
-import rozov.nikita.linkd.utility.PropertyUtil;
+import rozov.nikita.linkd.utility.ConfigProperties;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -21,7 +21,7 @@ import java.util.UUID;
 public class IdempotencyService {
 
     private final IdempotencyRecordRepository idempotencyRecordRepository;
-    private final PropertyUtil props;
+    private final ConfigProperties props;
 
 
     @Transactional

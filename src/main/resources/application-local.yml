@@ -54,8 +54,9 @@ config:
   idempotency_max_wait_ms: 1000
   idempotency_poll_interval_ms: 200
 
-#rate_limiter:
-#  capacity: 2
-#  refill_tokens: 1
-#  refill_period_nanos: 500_000_000_000_000 #5000 sec
-#  enabled: false
+rate_limiter:
+  capacity: 2
+  refill_tokens: 1
+  refill_period_nanos: 500_000_000_000 #5000 sec
+  eviction_period_seconds: 60
+  enabled: false

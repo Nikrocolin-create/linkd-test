@@ -7,7 +7,7 @@ import rozov.nikita.linkd.dto.LinkResp;
 import rozov.nikita.linkd.exception.IdempotencyTimeoutException;
 import rozov.nikita.linkd.service.IdempotencyService;
 import rozov.nikita.linkd.service.LinkService;
-import rozov.nikita.linkd.utility.PropertyUtil;
+import rozov.nikita.linkd.utility.ConfigProperties;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -20,7 +20,7 @@ import static java.lang.Thread.sleep;
 public class LinkManager {
     private final IdempotencyService idempotencyService;
     private final LinkService linkService;
-    private final PropertyUtil props;
+    private final ConfigProperties props;
     public LinkResp create(CreateLinkReq req, boolean cacheEnabled, UUID idempotencyKey) {
         LinkResp resp = null;
         if (idempotencyKey != null) {

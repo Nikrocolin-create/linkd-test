@@ -19,7 +19,7 @@ import rozov.nikita.linkd.dto.LinkResp;
 import rozov.nikita.linkd.repository.IdempotencyRecordRepository;
 import rozov.nikita.linkd.repository.LinkRepository;
 import rozov.nikita.linkd.utility.CodeGenerator;
-import rozov.nikita.linkd.utility.PropertyUtil;
+import rozov.nikita.linkd.utility.ConfigProperties;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -35,14 +35,14 @@ public class LinkService {
 
     private final LinkRepository repository;
     private final IdempotencyRecordRepository idempotencyRecordRepository;
-    private final PropertyUtil props;
+    private final ConfigProperties props;
     private final RedisTemplate<String, String> redisTemplate;
     private final CodeGenerator codeGenerator;
     private final RedisScript<Long> UNLOCK_SCRIPT;
     private final Counter cacheMissCounter;
     private final Counter cacheHitCounter;
 
-    public LinkService(LinkRepository repository, IdempotencyRecordRepository idempotencyRecordRepository, PropertyUtil props, CodeGenerator codeGenerator,
+    public LinkService(LinkRepository repository, IdempotencyRecordRepository idempotencyRecordRepository, ConfigProperties props, CodeGenerator codeGenerator,
                        RedisTemplate<String, String> redisTemplate, MeterRegistry meterRegistry) {
         this.repository = repository;
         this.idempotencyRecordRepository = idempotencyRecordRepository;
@@ -61,6 +61,10 @@ public class LinkService {
         Long id = repository.nextId();
         String shortCode = generateShortCode(req.getCustomAlias(), id);
         Optional<Link> existing = repository.findByLongUrlAndExpiresAtAfter(req.getUrl(), Instant.now());
+        if (cacheEnabled) {
+            ValueOperations<String, String> ops = redisTemplate.opsForValue();
+            ops.set(shortCode, req.getUrl(), 60, TimeUnit.SECONDS);
+        }
         if (existing.isPresent()) {
             Link found = existing.get();
             if (idempotencyKey != null) {

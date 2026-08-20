@@ -63,7 +63,7 @@ public class RedisTests {
 
         String body = mockMvc.perform(post("/api/v1/links")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateLinkReq("https://www.google1.com/", null))))
+                        .content(objectMapper.writeValueAsString(new CreateLinkReq("https://www.example.com/", null))))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
@@ -78,7 +78,7 @@ public class RedisTests {
 
     @Test
     public void redisDeleteTest() throws Exception {
-        String longUrl = "https://www.google2.com/";
+        String longUrl = "https://www.example.com/";
         ValueOperations<String, String> spyOps = Mockito.spy(redisTemplate.opsForValue());
         doReturn(spyOps).when(redisTemplate).opsForValue();
 
@@ -99,7 +99,7 @@ public class RedisTests {
     }
     @Test
     public void cacheWarmingTest() throws Exception {
-        String longUrl = "https://www.google2.com/";
+        String longUrl = "https://www.example.com/";
         ValueOperations<String, String> spyOps = Mockito.spy(redisTemplate.opsForValue());
         doReturn(spyOps).when(redisTemplate).opsForValue();
 

@@ -12,7 +12,7 @@ import java.util.Map;
 @ConfigurationProperties(prefix = "config")
 @Getter
 @Setter
-public class PropertyUtil {
+public class ConfigProperties {
     private String baseUrl;
     private String chars;
     private int length;
